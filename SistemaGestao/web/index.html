@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestão</title>
+<style>
+  :root {
+    --bg: #f0f2f5; --white: #ffffff; --primary: #2563eb; --primary-dark: #1d4ed8;
+    --success: #16a34a; --danger: #dc2626; --warning: #d97706; --gray: #6b7280;
+    --border: #e5e7eb; --text: #111827; --text-light: #6b7280;
+    --radius: 8px; --shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: 100vh; }
+  nav { width: 220px; background: #1e293b; color: white; padding: 0; position: fixed; top:0; left:0; height:100vh; overflow-y:auto; z-index:100; }
+  nav .logo { padding: 20px 16px; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #334155; color: #93c5fd; }
+  nav ul { list-style: none; padding: 8px 0; }
+  nav ul li a { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: #cbd5e1; text-decoration: none; font-size: .9rem; transition: all .15s; cursor:pointer; }
+  nav ul li a:hover, nav ul li a.active { background: #2563eb; color: white; }
+  nav ul li a .ico { font-size: 1.1rem; }
+  main { margin-left: 220px; padding: 24px; flex: 1; }
+  .page { display: none; }
+  .page.active { display: block; }
+  h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--text); }
+  h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--text); }
+
+  /* CARDS */
+  .card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat { background: var(--white); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
+  .stat .val { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+  .stat .lbl { font-size: .8rem; color: var(--text-light); margin-top: 2px; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  label { font-size: .82rem; font-weight: 600; color: var(--text-light); }
+  input, select, textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: .9rem; width: 100%; transition: border .15s; }
+  input:focus, select:focus { outline: none; border-color: var(--primary); }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: .88rem; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #15803d; }
+  .btn-danger  { background: var(--danger); color: white; }
+  .btn-danger:hover  { background: #b91c1c; }
+  .btn-warn   { background: var(--warning); color: white; }
+  .btn-warn:hover { background: #b45309; }
+  .btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-sm { padding: 5px 10px; font-size: .8rem; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  thead th { background: #f8fafc; font-weight: 600; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-light); font-size: .8rem; text-transform: uppercase; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+  .badge-green  { background: #dcfce7; color: #166534; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-blue   { background: #dbeafe; color: #1e40af; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+
+  /* ALERT */
+  .alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: .88rem; }
+  .alert-warn { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+  .alert-err  { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+  .alert-ok   { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+
+  /* MODAL */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 10px; padding: 24px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { margin-bottom: 16px; }
+  .modal-close { float: right; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--gray); }
+
+  /* COMANDA ITEMS */
+  .item-list { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: .88rem; }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: #f8fafc; }
+  .item-total { font-weight: 700; padding: 10px 12px; background: #f8fafc; text-align: right; font-size: .95rem; }
+
+  /* PAGAMENTOS */
+  .pagamento-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .pagamento-row select { width: 140px; flex-shrink: 0; }
+  .pagamento-row input  { flex: 1; }
+
+  /* CAIXA */
+  .caixa-status { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-green { background: #22c55e; }
+  .dot-red   { background: #ef4444; }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-row input { max-width: 300px; }
+
+  #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast-msg { padding: 12px 18px; border-radius: 8px; font-size: .88rem; font-weight: 500; color: white; box-shadow: 0 4px 12px rgba(0,0,0,.2); animation: slideIn .2s ease; }
+  .toast-ok  { background: #16a34a; }
+  .toast-err { background: #dc2626; }
+  @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:700px) { .two-col { grid-template-columns: 1fr; } nav { width: 56px; } nav .logo span { display:none; } nav ul li a span { display:none; } main { margin-left: 56px; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- NAV -->
+<nav>
+  <div class="logo"><span>⚙ Gestão</span></div>
+  <ul>
+    <li><a class="active" onclick="showPage('dashboard')"><span class="ico">📊</span><span>Dashboard</span></a></li>
+    <li><a onclick="showPage('produtos')"><span class="ico">📦</span><span>Produtos</span></a></li>
+    <li><a onclick="showPage('estoque')"><span class="ico">🏪</span><span>Estoque</span></a></li>
+    <li><a onclick="showPage('comandas')"><span class="ico">🧾</span><span>Comandas</span></a></li>
+    <li><a onclick="showPage('caixa')"><span class="ico">💰</span><span>Caixa</span></a></li>
+    <li><a onclick="showPage('relatorios')"><span class="ico">📈</span><span>Relatórios</span></a></li>
+  </ul>
+</nav>
+
+<main>
+
+<!-- ======================== DASHBOARD ======================== -->
+<div id="page-dashboard" class="page active">
+  <h1>Dashboard</h1>
+  <div class="stats" id="dash-stats"></div>
+  <div class="two-col">
+    <div class="card">
+      <h2>⚠ Estoque Baixo</h2>
+      <div id="dash-estoque-baixo"></div>
+    </div>
+    <div class="card">
+      <h2>🧾 Comandas Abertas</h2>
+      <div id="dash-comandas"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== PRODUTOS ======================== -->
+<div id="page-produtos" class="page">
+  <h1>Produtos</h1>
+  <div class="card">
+    <h2>Cadastrar Produto</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>Nome *</label><input id="p-nome" placeholder="Ex: Coca-Cola 350ml"></div>
+      <div class="form-group"><label>Código *</label><input id="p-codigo" placeholder="Ex: COCA001"></div>
+      <div class="form-group"><label>Preço Compra (R$) *</label><input id="p-compra" type="number" step="0.01" min="0" placeholder="0,00"></div>
+      <div class="form-group"><label>Preço Venda (R$) *</label><input id="p-venda" type="number" step="0.01" min="0" placeholder="0,00"></div>
+      <div class="form-group"><label>Qtd Estoque Inicial</label><input id="p-qtd" type="number" min="0" value="0"></div>
+      <div class="form-group"><label>Estoque Mínimo</label><input id="p-min" type="number" min="0" value="0"></div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="cadastrarProduto()">＋ Cadastrar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="search-row">
+      <input id="busca-produto" placeholder="Buscar por nome..." oninput="buscarProdutos(this.value)">
+      <button class="btn btn-ghost" onclick="carregarProdutos()">↺ Atualizar</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Código</th><th>Nome</th><th>Compra</th><th>Venda</th><th>Estoque</th><th>Mín</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="tabela-produtos"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== ESTOQUE ======================== -->
+<div id="page-estoque" class="page">
+  <h1>Movimentações de Estoque</h1>
+  <div class="two-col">
+    <div class="card">
+      <h2>Registrar Entrada</h2>
+      <div class="form-group" style="margin-bottom:10px"><label>Produto</label>
+        <select id="est-entrada-produto"><option value="">Selecione...</option></select></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Quantidade</label>
+        <input id="est-entrada-qtd" type="number" min="1" value="1"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Observação</label>
+        <input id="est-entrada-obs" placeholder="Opcional"></div>
+      <button class="btn btn-success" onclick="registrarEntrada()">↑ Registrar Entrada</button>
+    </div>
+    <div class="card">
+      <h2>Registrar Saída</h2>
+      <div class="form-group" style="margin-bottom:10px"><label>Produto</label>
+        <select id="est-saida-produto"><option value="">Selecione...</option></select></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Quantidade</label>
+        <input id="est-saida-qtd" type="number" min="1" value="1"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Observação</label>
+        <input id="est-saida-obs" placeholder="Opcional"></div>
+      <button class="btn btn-danger" onclick="registrarSaida()">↓ Registrar Saída</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Ajuste Manual de Estoque</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>Produto</label>
+        <select id="est-ajuste-produto"><option value="">Selecione...</option></select></div>
+      <div class="form-group"><label>Nova Quantidade</label>
+        <input id="est-ajuste-qtd" type="number" min="0" value="0"></div>
+      <div class="form-group"><label>Observação</label>
+        <input id="est-ajuste-obs" placeholder="Motivo do ajuste"></div>
+    </div>
+    <div class="btns"><button class="btn btn-warn" onclick="ajustarEstoque()">⚖ Ajustar</button></div>
+  </div>
+  <div class="card">
+    <h2>Histórico de Movimentações</h2>
+    <button class="btn btn-ghost btn-sm" onclick="carregarHistoricoEstoque()" style="margin-bottom:12px">↺ Atualizar</button>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Anterior</th><th>Nova</th><th>Obs.</th></tr></thead>
+        <tbody id="tabela-estoque"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== COMANDAS ======================== -->
+<div id="page-comandas" class="page">
+  <h1>Comandas</h1>
+  <div class="two-col">
+    <div>
+      <!-- LISTA DE COMANDAS -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h2 style="margin:0">Comandas Abertas</h2>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNovaComanda()">＋ Nova</button>
+        </div>
+        <div id="lista-comandas"></div>
+      </div>
+    </div>
+    <!-- DETALHE DA COMANDA -->
+    <div>
+      <div class="card" id="card-comanda-detalhe" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h2 id="comanda-titulo" style="margin:0"></h2>
+          <button class="btn btn-ghost btn-sm" onclick="fecharDetalhe()">✕</button>
+        </div>
+        <div id="comanda-itens-lista"></div>
+        <div class="item-total" id="comanda-total"></div>
+
+        <!-- Adicionar produto -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <h2>Adicionar Produto</h2>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <select id="com-produto-sel" style="flex:1"><option value="">Selecione produto...</option></select>
+            <input id="com-produto-qtd" type="number" min="1" value="1" style="width:70px">
+            <button class="btn btn-success btn-sm" onclick="adicionarProdutoComanda()">Adicionar</button>
+          </div>
+        </div>
+
+        <!-- Pagamentos -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <h2>Pagamentos</h2>
+          <div id="lista-pagamentos"></div>
+          <div class="pagamento-row">
+            <select id="pag-forma">
+              <option value="DINHEIRO">💵 Dinheiro</option>
+              <option value="PIX">📱 PIX</option>
+              <option value="CARTAO">💳 Cartão</option>
+            </select>
+            <input id="pag-valor" type="number" step="0.01" placeholder="Valor" style="max-width:140px">
+            <button class="btn btn-primary btn-sm" onclick="adicionarPagamento()">Adicionar</button>
+          </div>
+          <div id="pag-resumo" style="margin-top:8px;font-size:.88rem;color:var(--text-light)"></div>
+        </div>
+
+        <div class="btns" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+          <button class="btn btn-danger" onclick="fecharComanda()">✓ Fechar Comanda</button>
+          <button class="btn btn-ghost" onclick="abrirModalJuntar()">⊕ Juntar</button>
+          <button class="btn btn-ghost btn-sm" onclick="limparPagamentos()">🗑 Limpar Pgtos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== CAIXA ======================== -->
+<div id="page-caixa" class="page">
+  <h1>Caixa</h1>
+  <div id="caixa-fechado" class="card">
+    <div class="caixa-status"><div class="dot dot-red"></div><strong>Caixa Fechado</strong></div>
+    <div class="form-group" style="max-width:220px;margin-bottom:12px">
+      <label>Saldo Inicial (R$)</label>
+      <input id="caixa-saldo-inicial" type="number" step="0.01" min="0" value="0" placeholder="0,00">
+    </div>
+    <button class="btn btn-success" onclick="abrirCaixa()">▶ Abrir Caixa</button>
+  </div>
+  <div id="caixa-aberto" style="display:none">
+    <div class="stats" id="caixa-stats"></div>
+    <div class="card">
+      <div class="caixa-status"><div class="dot dot-green"></div><strong>Caixa Aberto</strong> <span id="caixa-data-abertura" style="color:var(--text-light);font-size:.85rem"></span></div>
+      <div class="two-col">
+        <div>
+          <h2>Entrada Manual</h2>
+          <div class="form-group" style="margin-bottom:8px"><label>Descrição</label><input id="cx-entrada-desc" placeholder="Ex: Suprimento"></div>
+          <div class="form-group" style="margin-bottom:8px"><label>Valor (R$)</label><input id="cx-entrada-val" type="number" step="0.01" min="0.01"></div>
+          <button class="btn btn-success btn-sm" onclick="entradaCaixa()">↑ Entrada</button>
+        </div>
+        <div>
+          <h2>Saída Manual</h2>
+          <div class="form-group" style="margin-bottom:8px"><label>Descrição</label><input id="cx-saida-desc" placeholder="Ex: Pagamento fornecedor"></div>
+          <div class="form-group" style="margin-bottom:8px"><label>Valor (R$)</label><input id="cx-saida-val" type="number" step="0.01" min="0.01"></div>
+          <button class="btn btn-danger btn-sm" onclick="saidaCaixa()">↓ Saída</button>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <h2>Movimentações</h2>
+        <div class="tbl-wrap" style="max-height:240px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th></tr></thead>
+            <tbody id="tabela-movs-caixa"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="btns" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="btn btn-danger" onclick="fecharCaixa()">■ Fechar Caixa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== RELATORIOS ======================== -->
+<div id="page-relatorios" class="page">
+  <h1>Relatórios</h1>
+  <div class="btns" style="margin-bottom:20px">
+    <button class="btn btn-primary" onclick="carregarRelatorio('hoje')">📅 Hoje</button>
+    <button class="btn btn-primary" onclick="carregarRelatorio('mes')">📆 Mês Atual</button>
+    <button class="btn btn-primary" onclick="carregarRelatorio('geral')">📊 Geral</button>
+    <button class="btn btn-warn" onclick="carregarRelatorio('estoque')">🏪 Estoque</button>
+    <button class="btn btn-ghost" onclick="exportarCSV('produtos')">⬇ CSV Estoque</button>
+    <button class="btn btn-ghost" onclick="exportarCSV('vendas')">⬇ CSV Vendas</button>
+  </div>
+  <div id="rel-stats" class="stats"></div>
+  <div class="card" id="rel-detalhe" style="display:none">
+    <h2 id="rel-titulo"></h2>
+    <div class="tbl-wrap">
+      <table id="rel-tabela">
+        <thead id="rel-thead"></thead>
+        <tbody id="rel-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="modal-nova-comanda">
+  <div class="modal">
+    <button class="modal-close" onclick="fecharModal('modal-nova-comanda')">✕</button>
+    <h2>Nova Comanda</h2>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Mesa / Nome do Cliente *</label>
+      <input id="nova-comanda-id" placeholder="Ex: Mesa 01, João">
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="criarComanda()">Criar Comanda</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-nova-comanda')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-juntar">
+  <div class="modal">
+    <button class="modal-close" onclick="fecharModal('modal-juntar')">✕</button>
+    <h2>Juntar Comandas</h2>
+    <p style="margin-bottom:12px;font-size:.88rem;color:var(--text-light)">Os itens da comanda de origem serão movidos para o destino.</p>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Comanda Origem (será removida)</label>
+      <select id="juntar-origem"><option value="">Selecione...</option></select>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Comanda Destino (receberá os itens)</label>
+      <select id="juntar-destino"><option value="">Selecione...</option></select>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="juntarComandas()">Juntar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-juntar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-editar-produto">
+  <div class="modal">
+    <button class="modal-close" onclick="fecharModal('modal-editar-produto')">✕</button>
+    <h2>Editar Produto</h2>
+    <input type="hidden" id="edit-id">
+    <div class="form-grid">
+      <div class="form-group"><label>Nome</label><input id="edit-nome"></div>
+      <div class="form-group"><label>Código</label><input id="edit-codigo"></div>
+      <div class="form-group"><label>Preço Compra</label><input id="edit-compra" type="number" step="0.01"></div>
+      <div class="form-group"><label>Preço Venda</label><input id="edit-venda" type="number" step="0.01"></div>
+      <div class="form-group"><label>Estoque Mínimo</label><input id="edit-min" type="number" min="0"></div>
+    </div>
+    <div class="btns" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="salvarEdicaoProduto()">Salvar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('modal-editar-produto')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';
+let comandaAtualId = null;
+let produtosList = [];
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (name === 'dashboard')  carregarDashboard();
+  if (name === 'produtos')   carregarProdutos();
+  if (name === 'estoque')    { carregarSelectsProdutos(); carregarHistoricoEstoque(); }
+  if (name === 'comandas')   { carregarSelectsProdutos(); carregarListaComandas(); }
+  if (name === 'caixa')      carregarCaixa();
+  if (name === 'relatorios') carregarRelatorio('hoje');
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.erro || 'Erro desconhecido');
+  return data;
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast-msg toast-' + type;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function fmt(val) { return 'R$ ' + Number(val).toFixed(2).replace('.', ','); }
+
+function abrirModal(id) { document.getElementById(id).classList.add('open'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+async function carregarDashboard() {
+  try {
+    const [rel, caixa, comandas, baixo] = await Promise.all([
+      api('GET', '/relatorios/hoje'),
+      fetch(API + '/caixa').then(r => r.json()),
+      api('GET', '/comandas?abertas'),
+      api('GET', '/produtos?estoque-baixo')
+    ]);
+
+    const statsEl = document.getElementById('dash-stats');
+    const saldoAtual = caixa.status === 'FECHADO' ? 0 : (caixa.calcularSaldoAtual || caixa.saldoInicial + caixa.totalVendas + caixa.totalEntradas - caixa.totalSaidas || 0);
+
+    statsEl.innerHTML = `
+      <div class="stat"><div class="val">${rel.quantidadeVendas}</div><div class="lbl">Vendas Hoje</div></div>
+      <div class="stat"><div class="val">${fmt(rel.totalVendas)}</div><div class="lbl">Faturamento Hoje</div></div>
+      <div class="stat"><div class="val">${fmt(rel.totalLucro)}</div><div class="lbl">Lucro Hoje</div></div>
+      <div class="stat"><div class="val">${Array.isArray(comandas) ? comandas.length : 0}</div><div class="lbl">Comandas Abertas</div></div>
+      <div class="stat"><div class="val">${caixa.status === 'FECHADO' ? '—' : fmt(caixa.saldoInicial + caixa.totalVendas + caixa.totalEntradas - caixa.totalSaidas)}</div><div class="lbl">Saldo do Caixa</div></div>
+    `;
+
+    const baixoEl = document.getElementById('dash-estoque-baixo');
+    if (!Array.isArray(baixo) || baixo.length === 0) {
+      baixoEl.innerHTML = '<p style="color:var(--text-light);font-size:.88rem">Nenhum produto com estoque baixo. ✓</p>';
+    } else {
+      baixoEl.innerHTML = baixo.map(p => `
+        <div class="item-row">
+          <span>${p.nome}</span>
+          <span class="badge badge-red">Qtd: ${p.quantidadeEstoque} / Mín: ${p.estoqueMinimo}</span>
+        </div>`).join('');
+    }
+
+    const comEl = document.getElementById('dash-comandas');
+    if (!Array.isArray(comandas) || comandas.length === 0) {
+      comEl.innerHTML = '<p style="color:var(--text-light);font-size:.88rem">Nenhuma comanda aberta.</p>';
+    } else {
+      comEl.innerHTML = `<div class="item-list">` + comandas.map(c => `
+        <div class="item-row">
+          <span>${c.identificacao}</span>
+          <span>${fmt(c.itens ? c.itens.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0) : 0)}</span>
+        </div>`).join('') + `</div>`;
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============================================================
+// PRODUTOS
+// ============================================================
+async function carregarProdutos() {
+  try {
+    produtosList = await api('GET', '/produtos');
+    renderTabelaProdutos(produtosList);
+  } catch (e) { toast('Erro ao carregar produtos', 'err'); }
+}
+
+function renderTabelaProdutos(lista) {
+  const tb = document.getElementById('tabela-produtos');
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light)">Nenhum produto cadastrado.</td></tr>'; return; }
+  tb.innerHTML = lista.map(p => `
+    <tr>
+      <td><code>${p.codigo}</code></td>
+      <td>${p.nome}</td>
+      <td>${fmt(p.precoCompra)}</td>
+      <td>${fmt(p.precoVenda)}</td>
+      <td><strong>${p.quantidadeEstoque}</strong></td>
+      <td>${p.estoqueMinimo}</td>
+      <td>${p.quantidadeEstoque <= p.estoqueMinimo
+        ? '<span class="badge badge-red">Baixo</span>'
+        : '<span class="badge badge-green">OK</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick='abrirEdicao(${JSON.stringify(p)})'>✏</button>
+        <button class="btn btn-danger btn-sm" onclick="removerProduto('${p.id}', '${p.nome}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function buscarProdutos(nome) {
+  if (!nome.trim()) { renderTabelaProdutos(produtosList); return; }
+  const filtrado = produtosList.filter(p => p.nome.toLowerCase().includes(nome.toLowerCase()) || p.codigo.toLowerCase().includes(nome.toLowerCase()));
+  renderTabelaProdutos(filtrado);
+}
+
+async function cadastrarProduto() {
+  try {
+    await api('POST', '/produtos', {
+      nome: document.getElementById('p-nome').value,
+      codigo: document.getElementById('p-codigo').value,
+      precoCompra: parseFloat(document.getElementById('p-compra').value),
+      precoVenda: parseFloat(document.getElementById('p-venda').value),
+      quantidadeEstoque: parseInt(document.getElementById('p-qtd').value) || 0,
+      estoqueMinimo: parseInt(document.getElementById('p-min').value) || 0
+    });
+    toast('Produto cadastrado com sucesso!');
+    ['p-nome','p-codigo','p-compra','p-venda','p-qtd','p-min'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('p-qtd').value = 0;
+    document.getElementById('p-min').value = 0;
+    carregarProdutos();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function abrirEdicao(p) {
+  document.getElementById('edit-id').value = p.id;
+  document.getElementById('edit-nome').value = p.nome;
+  document.getElementById('edit-codigo').value = p.codigo;
+  document.getElementById('edit-compra').value = p.precoCompra;
+  document.getElementById('edit-venda').value = p.precoVenda;
+  document.getElementById('edit-min').value = p.estoqueMinimo;
+  abrirModal('modal-editar-produto');
+}
+
+async function salvarEdicaoProduto() {
+  try {
+    const id = document.getElementById('edit-id').value;
+    await api('PUT', '/produtos/' + id, {
+      nome: document.getElementById('edit-nome').value,
+      codigo: document.getElementById('edit-codigo').value,
+      precoCompra: parseFloat(document.getElementById('edit-compra').value),
+      precoVenda: parseFloat(document.getElementById('edit-venda').value),
+      estoqueMinimo: parseInt(document.getElementById('edit-min').value) || 0
+    });
+    fecharModal('modal-editar-produto');
+    toast('Produto atualizado!');
+    carregarProdutos();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function removerProduto(id, nome) {
+  if (!confirm(`Remover "${nome}"?`)) return;
+  try {
+    await api('DELETE', '/produtos/' + id);
+    toast('Produto removido.');
+    carregarProdutos();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+// ESTOQUE
+// ============================================================
+async function carregarSelectsProdutos() {
+  try {
+    produtosList = await api('GET', '/produtos');
+    const opts = '<option value="">Selecione produto...</option>' + produtosList.map(p =>
+      `<option value="${p.id}">${p.codigo} - ${p.nome} (Qtd: ${p.quantidadeEstoque})</option>`).join('');
+    ['est-entrada-produto','est-saida-produto','est-ajuste-produto','com-produto-sel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = opts;
+    });
+  } catch(e) {}
+}
+
+async function carregarHistoricoEstoque() {
+  try {
+    const lista = await api('GET', '/estoque');
+    const tb = document.getElementById('tabela-estoque');
+    if (!lista.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light)">Nenhuma movimentação.</td></tr>'; return; }
+    const cores = { ENTRADA: 'badge-green', SAIDA: 'badge-red', AJUSTE: 'badge-yellow' };
+    tb.innerHTML = [...lista].reverse().map(m => `
+      <tr>
+        <td style="white-space:nowrap">${m.data}</td>
+        <td>${m.nomeProduto}</td>
+        <td><span class="badge ${cores[m.tipo] || 'badge-blue'}">${m.tipo}</span></td>
+        <td><strong>${m.quantidade}</strong></td>
+        <td>${m.quantidadeAnterior}</td>
+        <td>${m.quantidadeNova}</td>
+        <td style="color:var(--text-light)">${m.observacao || ''}</td>
+      </tr>`).join('');
+  } catch(e) { toast('Erro ao carregar histórico', 'err'); }
+}
+
+async function registrarEntrada() {
+  try {
+    await api('POST', '/estoque/entrada', {
+      produtoId: document.getElementById('est-entrada-produto').value,
+      quantidade: parseInt(document.getElementById('est-entrada-qtd').value),
+      observacao: document.getElementById('est-entrada-obs').value
+    });
+    toast('Entrada registrada!');
+    carregarSelectsProdutos(); carregarHistoricoEstoque();
+    document.getElementById('est-entrada-obs').value = '';
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function registrarSaida() {
+  try {
+    await api('POST', '/estoque/saida', {
+      produtoId: document.getElementById('est-saida-produto').value,
+      quantidade: parseInt(document.getElementById('est-saida-qtd').value),
+      observacao: document.getElementById('est-saida-obs').value
+    });
+    toast('Saída registrada!');
+    carregarSelectsProdutos(); carregarHistoricoEstoque();
+    document.getElementById('est-saida-obs').value = '';
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function ajustarEstoque() {
+  try {
+    await api('POST', '/estoque/ajuste', {
+      produtoId: document.getElementById('est-ajuste-produto').value,
+      novaQuantidade: parseInt(document.getElementById('est-ajuste-qtd').value),
+      observacao: document.getElementById('est-ajuste-obs').value
+    });
+    toast('Estoque ajustado!');
+    carregarSelectsProdutos(); carregarHistoricoEstoque();
+    document.getElementById('est-ajuste-obs').value = '';
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+// COMANDAS
+// ============================================================
+async function carregarListaComandas() {
+  try {
+    const comandas = await api('GET', '/comandas?abertas');
+    const el = document.getElementById('lista-comandas');
+    if (!comandas.length) {
+      el.innerHTML = '<p style="color:var(--text-light);font-size:.88rem;padding:8px">Nenhuma comanda aberta.</p>'; return;
+    }
+    el.innerHTML = `<div class="item-list">` + comandas.map(c => {
+      const total = c.itens ? c.itens.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0) : 0;
+      const itens = c.itens ? c.itens.length : 0;
+      return `<div class="item-row" style="cursor:pointer" onclick="abrirComanda('${c.id}')">
+        <span><strong>${c.identificacao}</strong><br><small style="color:var(--text-light)">${itens} item(s)</small></span>
+        <span style="text-align:right"><strong>${fmt(total)}</strong><br><small style="color:var(--text-light)">${c.dataAbertura || ''}</small></span>
+      </div>`;
+    }).join('') + `</div>`;
+  } catch(e) { toast('Erro ao carregar comandas', 'err'); }
+}
+
+async function abrirComanda(id) {
+  try {
+    comandaAtualId = id;
+    const c = await api('GET', '/comandas/' + id);
+    renderDetalheComanda(c);
+    document.getElementById('card-comanda-detalhe').style.display = 'block';
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function fecharDetalhe() {
+  document.getElementById('card-comanda-detalhe').style.display = 'none';
+  comandaAtualId = null;
+}
+
+function renderDetalheComanda(c) {
+  document.getElementById('comanda-titulo').textContent = '🧾 ' + c.identificacao;
+  const total = c.itens ? c.itens.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0) : 0;
+  const pago  = c.pagamentos ? c.pagamentos.reduce((s, p) => s + p.valor, 0) : 0;
+
+  if (!c.itens || c.itens.length === 0) {
+    document.getElementById('comanda-itens-lista').innerHTML = '<p style="color:var(--text-light);font-size:.88rem;padding:8px">Nenhum item adicionado.</p>';
+  } else {
+    document.getElementById('comanda-itens-lista').innerHTML = `<div class="item-list">` + c.itens.map(i => `
+      <div class="item-row">
+        <span>${i.nomeProduto}</span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span>${i.quantidade} × ${fmt(i.precoUnitario)}</span>
+          <strong>${fmt(i.quantidade * i.precoUnitario)}</strong>
+          <button class="btn btn-danger btn-sm" onclick="removerItemComanda('${c.id}','${i.produtoId}')">✕</button>
+        </span>
+      </div>`).join('') + `</div>`;
+  }
+
+  document.getElementById('comanda-total').innerHTML = `Total: <strong>${fmt(total)}</strong>`;
+
+  const formaIcon = { DINHEIRO: '💵', PIX: '📱', CARTAO: '💳' };
+  document.getElementById('lista-pagamentos').innerHTML = c.pagamentos && c.pagamentos.length
+    ? c.pagamentos.map(p => `<div class="item-row"><span>${formaIcon[p.forma] || ''} ${p.forma}</span><span>${fmt(p.valor)}</span></div>`).join('')
+    : '<p style="color:var(--text-light);font-size:.82rem">Sem pagamentos registrados.</p>';
+
+  const falta = total - pago;
+  document.getElementById('pag-resumo').innerHTML =
+    `Pago: <strong>${fmt(pago)}</strong> | Falta: <strong style="color:${falta > 0 ? 'var(--danger)' : 'var(--success)'}">${fmt(Math.max(0, falta))}</strong>${pago > total ? ` | Troco: <strong>${fmt(pago - total)}</strong>` : ''}`;
+}
+
+function abrirModalNovaComanda() { abrirModal('modal-nova-comanda'); }
+
+async function criarComanda() {
+  try {
+    await api('POST', '/comandas', { identificacao: document.getElementById('nova-comanda-id').value });
+    fecharModal('modal-nova-comanda');
+    document.getElementById('nova-comanda-id').value = '';
+    toast('Comanda criada!');
+    carregarListaComandas();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function adicionarProdutoComanda() {
+  try {
+    if (!comandaAtualId) return;
+    const c = await api('POST', '/comandas/adicionar-produto', {
+      comandaId: comandaAtualId,
+      produtoId: document.getElementById('com-produto-sel').value,
+      quantidade: parseInt(document.getElementById('com-produto-qtd').value) || 1
+    });
+    toast('Produto adicionado!');
+    renderDetalheComanda(c);
+    carregarListaComandas();
+    carregarSelectsProdutos();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function removerItemComanda(comandaId, produtoId) {
+  try {
+    const c = await api('POST', '/comandas/remover-produto', { comandaId, produtoId });
+    renderDetalheComanda(c);
+    carregarListaComandas();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function adicionarPagamento() {
+  try {
+    if (!comandaAtualId) return;
+    const c = await api('POST', '/comandas/pagamento', {
+      comandaId: comandaAtualId,
+      forma: document.getElementById('pag-forma').value,
+      valor: parseFloat(document.getElementById('pag-valor').value)
+    });
+    document.getElementById('pag-valor').value = '';
+    renderDetalheComanda(c);
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function limparPagamentos() {
+  try {
+    if (!comandaAtualId) return;
+    const c = await api('POST', '/comandas/limpar-pagamentos', { comandaId: comandaAtualId });
+    renderDetalheComanda(c);
+    toast('Pagamentos removidos.');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function fecharComanda() {
+  if (!comandaAtualId) return;
+  if (!confirm('Fechar a comanda? Esta ação não pode ser desfeita.')) return;
+  try {
+    const v = await api('POST', '/comandas/fechar', { comandaId: comandaAtualId });
+    toast(`Comanda fechada! Total: ${fmt(v.total)}`);
+    fecharDetalhe();
+    carregarListaComandas();
+    carregarSelectsProdutos();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function abrirModalJuntar() {
+  try {
+    const comandas = await api('GET', '/comandas?abertas');
+    const opts = comandas.map(c => `<option value="${c.id}">${c.identificacao}</option>`).join('');
+    document.getElementById('juntar-origem').innerHTML = '<option value="">Selecione...</option>' + opts;
+    document.getElementById('juntar-destino').innerHTML = '<option value="">Selecione...</option>' + opts;
+    abrirModal('modal-juntar');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function juntarComandas() {
+  try {
+    const c = await api('POST', '/comandas/juntar', {
+      origemId: document.getElementById('juntar-origem').value,
+      destinoId: document.getElementById('juntar-destino').value
+    });
+    fecharModal('modal-juntar');
+    toast('Comandas unidas!');
+    carregarListaComandas();
+    if (comandaAtualId) { renderDetalheComanda(c); comandaAtualId = c.id; }
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+// CAIXA
+// ============================================================
+async function carregarCaixa() {
+  try {
+    const caixa = await fetch(API + '/caixa').then(r => r.json());
+    if (caixa.status === 'FECHADO' || !caixa.id) {
+      document.getElementById('caixa-fechado').style.display = 'block';
+      document.getElementById('caixa-aberto').style.display = 'none';
+      return;
+    }
+    document.getElementById('caixa-fechado').style.display = 'none';
+    document.getElementById('caixa-aberto').style.display = 'block';
+    document.getElementById('caixa-data-abertura').textContent = 'Aberto em: ' + (caixa.dataAbertura || '');
+
+    const saldoAtual = caixa.saldoInicial + caixa.totalVendas + caixa.totalEntradas - caixa.totalSaidas;
+    document.getElementById('caixa-stats').innerHTML = `
+      <div class="stat"><div class="val">${fmt(caixa.saldoInicial)}</div><div class="lbl">Saldo Inicial</div></div>
+      <div class="stat"><div class="val">${fmt(caixa.totalVendas)}</div><div class="lbl">Total Vendas</div></div>
+      <div class="stat"><div class="val">${fmt(caixa.totalEntradas)}</div><div class="lbl">Entradas</div></div>
+      <div class="stat"><div class="val">${fmt(caixa.totalSaidas)}</div><div class="lbl">Saídas</div></div>
+      <div class="stat"><div class="val">${fmt(saldoAtual)}</div><div class="lbl">Saldo Atual</div></div>
+      <div class="stat"><div class="val">${fmt(caixa.lucroTotal)}</div><div class="lbl">Lucro</div></div>
+    `;
+
+    const movs = caixa.movimentacoes || [];
+    const tipoIcon = { VENDA: '💰', ENTRADA_MANUAL: '↑', SAIDA_MANUAL: '↓' };
+    const tipoClass = { VENDA: 'badge-green', ENTRADA_MANUAL: 'badge-blue', SAIDA_MANUAL: 'badge-red' };
+    const tb = document.getElementById('tabela-movs-caixa');
+    tb.innerHTML = [...movs].reverse().map(m => `
+      <tr>
+        <td style="white-space:nowrap;font-size:.8rem">${m.data || ''}</td>
+        <td><span class="badge ${tipoClass[m.tipo] || 'badge-blue'}">${tipoIcon[m.tipo] || ''} ${m.tipo}</span></td>
+        <td>${m.descricao}</td>
+        <td><strong>${fmt(m.valor)}</strong></td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function abrirCaixa() {
+  try {
+    const saldo = parseFloat(document.getElementById('caixa-saldo-inicial').value) || 0;
+    await api('POST', '/caixa/abrir', { saldoInicial: saldo });
+    toast('Caixa aberto!');
+    carregarCaixa();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function fecharCaixa() {
+  if (!confirm('Fechar o caixa?')) return;
+  try {
+    const c = await api('POST', '/caixa/fechar');
+    toast(`Caixa fechado! Saldo final: ${fmt(c.saldoFinal)}`);
+    carregarCaixa();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function entradaCaixa() {
+  try {
+    await api('POST', '/caixa/entrada', {
+      descricao: document.getElementById('cx-entrada-desc').value,
+      valor: parseFloat(document.getElementById('cx-entrada-val').value)
+    });
+    toast('Entrada registrada!');
+    document.getElementById('cx-entrada-desc').value = '';
+    document.getElementById('cx-entrada-val').value = '';
+    carregarCaixa();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function saidaCaixa() {
+  try {
+    await api('POST', '/caixa/saida', {
+      descricao: document.getElementById('cx-saida-desc').value,
+      valor: parseFloat(document.getElementById('cx-saida-val').value)
+    });
+    toast('Saída registrada!');
+    document.getElementById('cx-saida-desc').value = '';
+    document.getElementById('cx-saida-val').value = '';
+    carregarCaixa();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+// RELATÓRIOS
+// ============================================================
+async function carregarRelatorio(tipo) {
+  try {
+    document.getElementById('rel-stats').innerHTML = '';
+    document.getElementById('rel-detalhe').style.display = 'none';
+
+    if (tipo === 'estoque') {
+      const r = await api('GET', '/relatorios/estoque');
+      document.getElementById('rel-stats').innerHTML = `
+        <div class="stat"><div class="val">${r.totalProdutos}</div><div class="lbl">Total Produtos</div></div>
+        <div class="stat"><div class="val">${r.produtosComEstoqueBaixo}</div><div class="lbl">Estoque Baixo</div></div>
+        <div class="stat"><div class="val">${fmt(r.valorTotalVenda)}</div><div class="lbl">Valor Total (Venda)</div></div>
+        <div class="stat"><div class="val">${fmt(r.custoTotalEstoque)}</div><div class="lbl">Custo Total</div></div>
+        <div class="stat"><div class="val">${fmt(r.lucroEstimado)}</div><div class="lbl">Lucro Estimado</div></div>
+      `;
+      if (r.produtosBaixoEstoque && r.produtosBaixoEstoque.length > 0) {
+        document.getElementById('rel-detalhe').style.display = 'block';
+        document.getElementById('rel-titulo').textContent = 'Produtos com Estoque Baixo';
+        document.getElementById('rel-thead').innerHTML = '<tr><th>Código</th><th>Nome</th><th>Qtd Atual</th><th>Mínimo</th></tr>';
+        document.getElementById('rel-tbody').innerHTML = r.produtosBaixoEstoque.map(p =>
+          `<tr><td>${p.codigo}</td><td>${p.nome}</td><td>${p.quantidadeEstoque}</td><td>${p.estoqueMinimo}</td></tr>`).join('');
+      }
+      return;
+    }
+
+    const endpoint = tipo === 'hoje' ? '/relatorios/hoje' : tipo === 'mes' ? '/relatorios/mes' : '/relatorios/geral';
+    const r = await api('GET', endpoint);
+
+    document.getElementById('rel-stats').innerHTML = `
+      <div class="stat"><div class="val">${r.quantidadeVendas}</div><div class="lbl">Vendas - ${r.periodo || tipo}</div></div>
+      <div class="stat"><div class="val">${fmt(r.totalVendas)}</div><div class="lbl">Total Vendido</div></div>
+      <div class="stat"><div class="val">${fmt(r.totalCusto)}</div><div class="lbl">Custo Total</div></div>
+      <div class="stat"><div class="val">${fmt(r.totalLucro)}</div><div class="lbl">Lucro Total</div></div>
+    `;
+
+    if (r.vendas && r.vendas.length > 0) {
+      document.getElementById('rel-detalhe').style.display = 'block';
+      document.getElementById('rel-titulo').textContent = 'Detalhamento de Vendas';
+      document.getElementById('rel-thead').innerHTML = '<tr><th>ID</th><th>Comanda</th><th>Data</th><th>Total</th><th>Custo</th><th>Lucro</th></tr>';
+      document.getElementById('rel-tbody').innerHTML = [...r.vendas].reverse().map(v =>
+        `<tr><td><code>${v.id}</code></td><td>${v.identificacaoComanda}</td><td>${v.data}</td><td>${fmt(v.total)}</td><td>${fmt(v.custo)}</td><td style="color:var(--success)">${fmt(v.lucro)}</td></tr>`).join('');
+    }
+  } catch(e) { toast('Erro ao carregar relatório', 'err'); }
+}
+
+async function exportarCSV(tipo) {
+  toast('Exportação disponível via linha de comando (opção 6 do menu CLI).');
+}
+
+// Inicialização
+carregarDashboard();
+</script>
+</body>
+</html>
