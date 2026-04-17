@@ -8,7 +8,11 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
 public class Servidor {
-    private static final int PORTA = 8080;
+    // Em vez de: private static final int PORTA = 8080;
+// Use isso para aceitar a porta que o Render mandar:
+    private static final int PORTA = System.getenv("PORT") != null
+            ? Integer.parseInt(System.getenv("PORT"))
+            : 8080;
     private HttpServer server;
 
     private final ProdutoService produtoService;
