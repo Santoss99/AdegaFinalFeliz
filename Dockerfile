@@ -1,15 +1,17 @@
-# Estágio 1: Build (Compilação)
+# Estágio 1: Compilação
 FROM maven:3.8.5-openjdk-17 AS build
 COPY . .
-# Garante que o Maven gere o arquivo na raiz do container
 RUN mvn clean package -DskipTests
 
-# Estágio 2: Run (Execução)
+# Estágio 2: Execução
 FROM eclipse-temurin:17-jre
-# Criamos uma pasta limpa para rodar o sistema
 WORKDIR /app
-# Buscamos o arquivo .jar dentro de target e renomeamos para app.jar aqui dentro
-COPY --from=build /target/*.jar /app/app.jar
+
+# De acordo com seu POM, o arquivo sai na raiz com o nome gestao.jar
+COPY --from=build /gestao.jar app.jar
+# Precisamos da pasta lib que seu maven-dependency-plugin cria
+COPY --from=build /lib ./lib
+
 EXPOSE 8080
-# Rodamos apontando o caminho completo
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
